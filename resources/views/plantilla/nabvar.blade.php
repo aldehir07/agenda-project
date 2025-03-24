@@ -10,10 +10,10 @@
                 @auth
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('reservas.index') }}">Reservas</a>
+                            <a class="nav-link" href="{{route('registro.index')}}">Agenda</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#">Agenda</a>
+                            <a class="nav-link" href="{{ route('calendario') }}">Reservar</a>
                         </li>
                     </ul>
                     <!-- Cerrar Sesión alineado a la derecha -->

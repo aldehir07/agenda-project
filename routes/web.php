@@ -3,18 +3,15 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MainController;
-use App\Http\Controllers\ReservaController;
-use App\Http\Controllers\AgendaController;
-
+use App\Http\Controllers\RegistroReservaController;
+use App\Http\Controllers\ReservaCalController;
 
 Route::get("/", [MainController::class, "index"])->name("home");
+Route::get('/calendario', [ReservaCalController::class, 'index'])->name('calendario');
+Route::get('/reservaCal/create', [ReservaCalController::class, 'create'])->name('reservaCal.create');
+Route::post('/reservaCal/store', [ReservaCalController::class, 'store'])->name('reservaCal.store');
 
-//Rutas para la Reserva
-Route::resource('reservas', ReservaController::class)->middleware('auth');
-
-// Rutas para la Agenda
-Route::resource('agenda', AgendaController::class)->middleware('auth');
-
+Route::resource('/registro', RegistroReservaController::class);
 
 Route::get('/', function () {
     return view('home');
