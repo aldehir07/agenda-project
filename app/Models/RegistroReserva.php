@@ -13,11 +13,11 @@ class RegistroReserva extends Model
 
     protected $fillable = [
         'fecha',
+        'salon',
         'hora_inicio',
         'hora_fin',
-        'salon',
-        'analista',
         'actividad',
+        'analista',
         'depto_responsable',
         'numero_evento',
         'scafid',
@@ -27,12 +27,10 @@ class RegistroReserva extends Model
         'tipo_actividad',
         'receso_am',
         'receso_pm',
-        'publico_meta',
-        'cant_participantes',
-        'facilitador_moderador',
+        'participantes',
         'estatus',
-        'insumos',
         'requisitos_tecnicos',
-        'asistencia_tecnica'
+        'insumos',
+        'observaciones'
     ];
 }

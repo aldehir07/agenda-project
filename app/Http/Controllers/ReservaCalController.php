@@ -5,50 +5,58 @@ namespace App\Http\Controllers;
 use App\Models\ReservaCal;
 use Illuminate\Http\Request;
 use App\Models\RegistroReserva;
+use Carbon\Carbon;
 
 class ReservaCalController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+
     public function index()
     {
-        $reservaCals = ReservaCal::all();
-        return view('calendario', compact('reservaCals'));
+        $reservaCals = ReservaCal::orderBy('fecha_inicio', 'asc')->get(); // Ordenar por fecha de inicio
+        $vista = request('vista', 'mensual'); // Por defecto vista mensual
+        $mesSeleccionado = request('mes', now()->format('m'));
+        $anioActual = now()->format('Y');
+        
+        if ($vista === 'semanal') {
+            $semanaActual = request('semana', now()->weekOfYear);
+            $fechaInicio = Carbon::now()->setISODate($anioActual, $semanaActual)->startOfWeek();
+            $fechaFin = $fechaInicio->copy()->endOfWeek();
+            
+            $reservaCals = $reservaCals->filter(function($reserva) use ($fechaInicio, $fechaFin) {
+                return Carbon::parse($reserva->fecha_inicio)->between($fechaInicio, $fechaFin) ||
+                       Carbon::parse($reserva->fecha_final)->between($fechaInicio, $fechaFin);
+            });
+        }
+
+        return view('calendario', compact('reservaCals', 'vista'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
+
     public function create(Request $request)
     {
         $fecha = $request->query('fecha');
         return view('reservaCal.create', compact('fecha'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         $request->validate([
-            'fecha' => 'required|date',
+            'fecha_inicio' => 'required|date',
+            'fecha_final' => 'required|date|after_or_equal:fecha_inicio',
             'hora_inicio' => 'required|date_format:H:i',
             'hora_fin' => 'required|date_format:H:i|after:hora_inicio',
             'actividad' => 'required|string|max:255',
             'analista' => 'required|string|max:255',
             'salon' => 'required|string|in:"Auditorio Jorge L. Quijada",
-                                        "Trabajo en Equipo",
-                                        "Comunicación Asertiva",
-                                        "Servicio al Cliente",
-                                        "Integridad",
-                                        "Creatividad Innovadora"',
+                                "Trabajo en Equipo",
+                                "Comunicación Asertiva",
+                                "Servicio al Cliente",
+                                "Integridad",
+                                "Creatividad Innovadora"',
             'depto_responsable' => 'required',
             'numero_evento' => 'required|numeric|digits:4',
             'scafid' => 'nullable|string',
             'mes' => 'required|string',
-            'fecha_inicio' => 'required|date',
-            'fecha_final' => 'required|date',
             'tipo_actividad' => 'required',
             'receso_am' => 'nullable',
             'receso_pm' => 'nullable',
@@ -59,36 +67,58 @@ class ReservaCalController extends Controller
             'insumos' => 'nullable|string',
             'requisitos_tecnicos' => 'nullable|string',
             'asistencia_tecnica' => 'required'
-
         ]);
 
-        // Verificar si ya hay una reserva en el mismo horario y salón
-        $existeReserva = ReservaCal::where('fecha', $request->fecha)
-            ->where('salon', $request->salon)
+        // Verificar si ya existe una reserva en el mismo rango de fechas, horas y salón
+        $existeReserva = ReservaCal::where('salon', $request->salon)
             ->where(function ($query) use ($request) {
-                $query->whereBetween('hora_inicio', [$request->hora_inicio, $request->hora_fin])
-                    ->orWhereBetween('hora_fin', [$request->hora_inicio, $request->hora_fin])
-                    ->orWhere(function ($q) use ($request) {
-                        $q->where('hora_inicio', '<=', $request->hora_inicio)
-                            ->where('hora_fin', '>=', $request->hora_fin);
-                    });
+                $query->whereBetween('fecha_inicio', [$request->fecha_inicio, $request->fecha_final])
+                      ->orWhereBetween('fecha_final', [$request->fecha_inicio, $request->fecha_final]);
+            })
+            ->where(function ($query) use ($request) {
+                $query->where(function ($q) use ($request) {
+                    $q->where('hora_inicio', '<', $request->hora_fin)
+                      ->where('hora_fin', '>', $request->hora_inicio);
+                });
             })
             ->exists();
 
         if ($existeReserva) {
-            // dd($existeReserva);
-
-            return redirect()->route('calendario')->withInput()->with('error', '⚠️ Ya hay una reserva en ese salón para esa fecha y hora.');
+            return redirect()->back()->withErrors(['error' => 'Ya existe una reserva en el mismo salón y horario.']);
         }
 
-        // Si no hay conflicto, guardar la reserva
-        ReservaCal::create($request->all());
+        // Crear un único registro con las fechas de inicio y fin
+        ReservaCal::create([
+            'fecha' => $request->fecha_inicio, // Fecha de inicio como referencia
+            'hora_inicio' => $request->hora_inicio,
+            'hora_fin' => $request->hora_fin,
+            'actividad' => $request->actividad,
+            'analista' => $request->analista,
+            'salon' => $request->salon,
+            'depto_responsable' => $request->depto_responsable,
+            'numero_evento' => $request->numero_evento,
+            'scafid' => $request->scafid,
+            'mes' => $request->mes,
+            'fecha_inicio' => $request->fecha_inicio,
+            'fecha_final' => $request->fecha_final,
+            'tipo_actividad' => $request->tipo_actividad,
+            'receso_am' => $request->receso_am,
+            'receso_pm' => $request->receso_pm,
+            'publico_meta' => $request->publico_meta,
+            'cant_participantes' => $request->cant_participantes,
+            'facilitador_moderador' => $request->facilitador_moderador,
+            'estatus' => $request->estatus,
+            'insumos' => $request->insumos,
+            'requisitos_tecnicos' => $request->requisitos_tecnicos,
+            'asistencia_tecnica' => $request->asistencia_tecnica
+        ]);
 
-        // Guardar en la tabla RegistroReserva
         RegistroReserva::create($request->all());
 
         return redirect()->route('calendario')->with('success', '✅ Reserva creada exitosamente.');
     }
+
+
 
 
 

@@ -13,6 +13,8 @@ Route::post('/reservaCal/store', [ReservaCalController::class, 'store'])->name('
 
 Route::resource('/registro', RegistroReservaController::class);
 
+Route::post('/reserva/cambiar-estatus', [RegistroReservaController::class, 'cambiarEstatus'])->name('reserva.cambiar-estatus');
+
 Route::get('/', function () {
     return view('home');
 })->middleware(['auth', 'verified'])->name('index');

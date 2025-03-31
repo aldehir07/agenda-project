@@ -1,68 +1,146 @@
-<!doctype html>
-<html lang="en">
-
+<!DOCTYPE html>
+<html lang="es">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
-    <title>Login Page</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Iniciar Sesión - Sistema de Reservas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: #f8f9fa;
+        }
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-card {
+            max-width: 400px;
+            width: 100%;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            background: white;
+        }
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .login-header img {
+            width: 80px;
+            margin-bottom: 1rem;
+        }
+        .form-floating {
+            margin-bottom: 1rem;
+        }
+        .btn-login {
+            width: 100%;
+            padding: 0.8rem;
+            font-size: 1.1rem;
+        }
+        .divider {
+            text-align: center;
+            margin: 1.5rem 0;
+            position: relative;
+        }
+        .divider::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #dee2e6;
+            z-index: 1;
+        }
+        .divider span {
+            background: white;
+            padding: 0 1rem;
+            color: #6c757d;
+            position: relative;
+            z-index: 2;
+        }
+    </style>
 </head>
-
 <body>
-    @include('plantilla.nabvar')
-    <x-guest-layout>
-        <!-- Session Status -->
-        <x-auth-session-status class="mb-4" :status="session('status')" />
+@include('plantilla.nabvar')
+    <div class="login-container">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="login-card">
+                        <div class="login-header">
+                            <img src="{{ asset('images/logo.png') }}" alt="Logo" class="mb-4">
+                            <h4>Bienvenido al Sistema</h4>
+                            <p class="text-muted">Ingresa tus credenciales para continuar</p>
+                        </div>
 
-        <form method="POST" action="{{ route('login') }}">
-            @csrf
+                        @if (session('status'))
+                            <div class="alert alert-success">
+                                {{ session('status') }}
+                            </div>
+                        @endif
 
-            <!-- Email Address -->
-            <div>
-                <x-input-label for="email" :value="__('Email')" />
-                <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')"
-                    required autofocus autocomplete="username" />
-                <x-input-error :messages="$errors->get('email')" class="mt-2" />
+                        @if ($errors->any())
+                            <div class="alert alert-danger">
+                                <ul class="mb-0">
+                                    @foreach ($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+
+                        <form method="POST" action="{{ route('login') }}">
+                            @csrf
+                            <div class="form-floating mb-3">
+                                <input type="email" class="form-control" id="email" name="email" 
+                                    placeholder="nombre@ejemplo.com" value="{{ old('email') }}" required>
+                                <label for="email">Correo Electrónico</label>
+                            </div>
+
+                            <div class="form-floating mb-3">
+                                <input type="password" class="form-control" id="password" 
+                                    name="password" placeholder="Contraseña" required>
+                                <label for="password">Contraseña</label>
+                            </div>
+
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="remember_me" 
+                                    name="remember">
+                                <label class="form-check-label" for="remember_me">
+                                    Recordar mis datos
+                                </label>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-login">
+                                <i class="fas fa-sign-in-alt me-2"></i>Iniciar Sesión
+                            </button>
+
+                            @if (Route::has('password.request'))
+                                <div class="text-center mt-3">
+                                    <a href="{{ route('password.request') }}" class="text-decoration-none">
+                                        ¿Olvidaste tu contraseña?
+                                    </a>
+                                </div>
+                            @endif
+
+                            <div class="divider">
+                                <span>¿No tienes cuenta?</span>
+                            </div>
+
+                            <a href="{{ route('register') }}" class="btn btn-outline-secondary btn-login">
+                                <i class="fas fa-user-plus me-2"></i>Registrarse
+                            </a>
+                        </form>
+                    </div>
+                </div>
             </div>
+        </div>
+    </div>
 
-            <!-- Password -->
-            <div class="mt-4">
-                <x-input-label for="password" :value="__('Password')" />
-
-                <x-text-input id="password" class="block mt-1 w-full" type="password" name="password" required
-                    autocomplete="current-password" />
-
-                <x-input-error :messages="$errors->get('password')" class="mt-2" />
-            </div>
-
-            <!-- Remember Me -->
-            <div class="block mt-4">
-                <label for="remember_me" class="inline-flex items-center">
-                    <input id="remember_me" type="checkbox"
-                        class="rounded dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800"
-                        name="remember">
-                    <span class="ms-2 text-sm text-gray-600 dark:text-gray-400">{{ __('Remember me') }}</span>
-                </label>
-            </div>
-
-            <div class="flex items-center justify-end mt-4">
-                @if (Route::has('password.request'))
-                    <a class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800"
-                        href="{{ route('password.request') }}">
-                        {{ __('Forgot your password?') }}
-                    </a>
-                @endif
-
-                <x-primary-button class="ms-3">
-                    {{ __('Log in') }}
-                </x-primary-button>
-            </div>
-        </form>
-    </x-guest-layout>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-gtEjrD/SeCtmISkJkNUaaKMoLD0//ElJ19smozuHV6z3Iehds+3Ulb9Bn9Plx0x4" crossorigin="anonymous">
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-
 </html>

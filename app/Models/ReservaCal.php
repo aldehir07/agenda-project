@@ -31,11 +31,6 @@ class ReservaCal extends Model
         'estatus',
         'insumos',
         'requisitos_tecnicos',
-        'asistencia_tecnica',
-        'salon',
-        'hora_inicio',
-        'hora_fin',
-        'actividad',
-        'analista'
+        'asistencia_tecnica'
     ];
 }

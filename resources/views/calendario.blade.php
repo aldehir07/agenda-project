@@ -7,6 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
     <title>Calendario - Prueba</title>
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
 </head>
 
 <body>
@@ -21,121 +22,387 @@
             </div>
         @endif
 
-
         @if (session('success'))
             <div class="alert alert-success">
                 {{ session('success') }}
             </div>
         @endif
-        {{-- {{ dd(session()->all()) }} --}}
-        <form method="GET" action="{{ route('calendario') }}"
-            class="mb-4 d-flex align-items-center justify-content-center gap-3 bg-light p-3 rounded shadow">
-            <label for="mes" class="form-label fw-bold mb-0">📅 Seleccionar mes:</label>
-            <select name="mes" id="mes" class="form-select w-auto" onchange="this.form.submit()">
-                @php
-                    setlocale(LC_TIME, 'es_ES.UTF-8', 'Spanish_Spain', 'Spanish'); // Configura el idioma a español
-                    $mesActual = request('mes', now()->format('m'));
-                @endphp
-                @foreach (range(1, 12) as $m)
-                    <option value="{{ str_pad($m, 2, '0', STR_PAD_LEFT) }}" {{ $m == $mesActual ? 'selected' : '' }}>
-                        {{ ucfirst(strftime('%B', mktime(0, 0, 0, $m, 1))) }}
-                    </option>
-                @endforeach
-            </select>
-        </form>
 
-        <div class="calendar">
+        <div class="mb-4 d-flex align-items-center justify-content-center gap-3 bg-light p-3 rounded shadow">
+            <!-- Selector de Vista -->
+            <div class="me-4">
+                <label class="form-label fw-bold mb-0">🗓️ Vista:</label>
+                <div class="btn-group" role="group">
+                    <a href="{{ route('calendario', ['vista' => 'mensual', 'mes' => request('mes')]) }}" 
+                       class="btn btn-{{ request('vista', 'mensual') === 'mensual' ? 'primary' : 'outline-primary' }}">
+                        Mensual
+                    </a>
+                    <a href="{{ route('calendario', ['vista' => 'semanal', 'semana' => request('semana', now()->weekOfYear)]) }}" 
+                       class="btn btn-{{ request('vista', 'mensual') === 'semanal' ? 'primary' : 'outline-primary' }}">
+                        Semanal
+                    </a>
+                </div>
+            </div>
+
+            @if(request('vista', 'mensual') === 'mensual')
+            <!-- Selector de Mes (solo visible en vista mensual) -->
+            <form method="GET" action="{{ route('calendario') }}" class="d-flex align-items-center gap-2">
+                <input type="hidden" name="vista" value="mensual">
+                <label for="mes" class="form-label fw-bold mb-0">📅 Mes:</label>
+                <select name="mes" id="mes" class="form-select w-auto" onchange="this.form.submit()">
+                    @php
+                        setlocale(LC_TIME, 'es_ES.UTF-8', 'Spanish_Spain', 'Spanish');
+                        $mesActual = request('mes', now()->format('m'));
+                    @endphp
+                    @foreach (range(1, 12) as $m)
+                        <option value="{{ str_pad($m, 2, '0', STR_PAD_LEFT) }}" {{ $m == $mesActual ? 'selected' : '' }}>
+                            {{ ucfirst(strftime('%B', mktime(0, 0, 0, $m, 1))) }}
+                        </option>
+                    @endforeach
+                </select>
+            </form>
+            @else
+            <!-- Selector de Semana (solo visible en vista semanal) -->
+            <form method="GET" action="{{ route('calendario') }}" class="d-flex align-items-center gap-2">
+                <input type="hidden" name="vista" value="semanal">
+                <label for="semana" class="form-label fw-bold mb-0">📅 Semana:</label>
+                <select name="semana" id="semana" class="form-select w-auto" onchange="this.form.submit()">
+                    @php
+                        $semanaActual = request('semana', now()->weekOfYear);
+                        $totalSemanas = 52;
+                    @endphp
+                    @foreach (range(1, $totalSemanas) as $s)
+                        <option value="{{ $s }}" {{ $s == $semanaActual ? 'selected' : '' }}>
+                            Semana {{ $s }}
+                        </option>
+                    @endforeach
+                </select>
+            </form>
+            @endif
+        </div>
+
+        <!-- Leyenda de colores de salones -->
+        <div class="mb-4 bg-light p-3 rounded shadow">
+            <h6 class="fw-bold mb-2">🎨 Leyenda de Salones:</h6>
+            <div class="d-flex flex-wrap gap-3">
+                @php
+                    $coloresSalones = [
+                        'Auditorio Jorge L. Quijada' => 'bg-primary',
+                        'Trabajo en Equipo' => 'bg-success',
+                        'Comunicación Asertiva' => 'bg-info',
+                        'Servicio al Cliente' => 'bg-warning',
+                        'Integridad' => 'bg-danger',
+                        'Creatividad Innovadora' => 'bg-secondary',
+                    ];
+                @endphp
+                @foreach($coloresSalones as $salon => $color)
+                    <div class="d-flex align-items-center">
+                        <span class="d-inline-block {{ $color }}" style="width: 20px; height: 20px; border-radius: 4px;"></span>
+                        <span class="ms-2">{{ $salon }}</span>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+
+        @php
+            // Variables comunes para ambas vistas
+            $anioActual = now()->format('Y');
+            $mesSeleccionado = request('mes', now()->format('m'));
+        @endphp
+
+        @if(request('vista', 'mensual') === 'mensual')
+        <!-- Vista Mensual -->
+        <div class="calendar calendar-month">
             @php
-                $mesSeleccionado = request('mes', now()->format('m'));
-                $anioActual = now()->format('Y');
                 $diasEnMes = cal_days_in_month(CAL_GREGORIAN, $mesSeleccionado, $anioActual);
+                $primerDia = Carbon\Carbon::createFromDate($anioActual, $mesSeleccionado, 1)->dayOfWeek;
+                $diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
             @endphp
+
+            <!-- Encabezados de días de la semana -->
+            @foreach($diasSemana as $dia)
+                <div class="calendar__header">{{ $dia }}</div>
+            @endforeach
+
+            <!-- Días vacíos antes del primer día del mes -->
+            @for($i = 0; $i < $primerDia; $i++)
+                <div class="calendar__day calendar__day--disabled"></div>
+            @endfor
+
+            <!-- Días del mes -->
             @for ($i = 1; $i <= $diasEnMes; $i++)
                 @php
-                    $fecha =
-                        $anioActual .
-                        '-' .
-                        str_pad($mesSeleccionado, 2, '0', STR_PAD_LEFT) .
-                        '-' .
-                        str_pad($i, 2, '0', STR_PAD_LEFT);
-                    $reservasDia = $reservaCals->where('fecha', $fecha);
-
-                    $conflicto = false;
-                    foreach ($reservasDia as $reserva1) {
-                        foreach ($reservasDia as $reserva2) {
-                            if (
-                                $reserva1->id !== $reserva2->id &&
-                                (($reserva1->hora_inicio >= $reserva2->hora_inicio &&
-                                    $reserva1->hora_inicio < $reserva2->hora_fin) ||
-                                    ($reserva1->hora_fin > $reserva2->hora_inicio &&
-                                        $reserva1->hora_fin <= $reserva2->hora_fin) ||
-                                    ($reserva1->hora_inicio <= $reserva2->hora_inicio &&
-                                        $reserva1->hora_fin >= $reserva2->hora_fin))
-                            ) {
-                                $conflicto = true;
-                                break 2; // Salir del bucle si hay un conflicto
-                            }
-                        }
-                    }
+                    $fecha = $anioActual . '-' . str_pad($mesSeleccionado, 2, '0', STR_PAD_LEFT) . '-' . str_pad($i, 2, '0', STR_PAD_LEFT);
+                    $reservasDia = $reservaCals->filter(function ($reserva) use ($fecha) {
+                        return $reserva->fecha_inicio <= $fecha && $reserva->fecha_final >= $fecha;
+                    });
                 @endphp
-
-                <div class="calendar__day {{ $conflicto ? 'bg-danger text-white' : '' }}">
-                    <a href="{{ route('reservaCal.create', ['fecha' => $fecha]) }}">
-                        <span class="calendar__date">{{ $i }}</span>
-                    </a>
-
+                <div class="calendar__day">
+                    <a href="{{ route('reservaCal.create', ['fecha' => $fecha]) }}" class="calendar__date">{{ $i }}</a>
                     @foreach ($reservasDia as $reserva)
-                        <div class="calendar__task">
-                            <strong>{{ $reserva->salon }}</strong> <br>
-                            {{ \Carbon\Carbon::parse($reserva->hora_inicio)->format('g:i A') }}
-                             -
-                            {{ \Carbon\Carbon::parse($reserva->hora_fin)->format('g:i A') }} <br>
-                            <em>{{ $reserva->actividad }}</em> <br>
-                            Analista: {{ $reserva->analista }} <br>
+                        <div class="calendar__task {{ $coloresSalones[$reserva->salon] ?? 'bg-light' }}" data-reserva-id="{{ $reserva->id }}">
+                            {{ \Carbon\Carbon::parse($reserva->hora_inicio)->format('H:i') }} - {{ \Carbon\Carbon::parse($reserva->hora_fin)->format('H:i') }}
                         </div>
                     @endforeach
-
-                    @if ($conflicto)
-                        <div class="alert alert-warning p-1 mt-2">
-                            ⚠️ Conflicto de horario en este día.
-                        </div>
-                    @endif
                 </div>
             @endfor
         </div>
+        @else
+        <!-- Vista Semanal -->
+        <div class="calendar calendar-week">
+            @php
+                $semanaActual = request('semana', now()->weekOfYear);
+                $fechaInicio = Carbon\Carbon::now()->setISODate($anioActual, $semanaActual)->startOfWeek();
+                $diasSemana = [];
+                for($i = 0; $i < 7; $i++) {
+                    $diasSemana[] = $fechaInicio->copy()->addDays($i);
+                }
+            @endphp
+
+            <div class="week-grid">
+                <!-- Columna de horas -->
+                <div class="week-grid__hours">
+                    @for($hora = 6; $hora <= 22; $hora++)
+                        <div class="week-grid__hour">{{ str_pad($hora, 2, '0', STR_PAD_LEFT) }}:00</div>
+                    @endfor
+                </div>
+
+                <!-- Columnas de días -->
+                @foreach($diasSemana as $dia)
+                    <div class="week-grid__day">
+                        <div class="week-grid__day-header">
+                            {{ $dia->format('D') }}<br>
+                            {{ $dia->format('d') }}
+                        </div>
+                        <div class="week-grid__day-content">
+                            @php
+                                $reservasDia = $reservaCals->filter(function ($reserva) use ($dia) {
+                                    return Carbon\Carbon::parse($reserva->fecha_inicio)->format('Y-m-d') <= $dia->format('Y-m-d') &&
+                                           Carbon\Carbon::parse($reserva->fecha_final)->format('Y-m-d') >= $dia->format('Y-m-d');
+                                });
+                            @endphp
+                            @foreach($reservasDia as $reserva)
+                                @php
+                                    $horaInicio = Carbon\Carbon::parse($reserva->hora_inicio);
+                                    $horaFin = Carbon\Carbon::parse($reserva->hora_fin);
+                                    $top = ($horaInicio->hour - 6) * 60 + $horaInicio->minute;
+                                    $height = ($horaFin->hour - $horaInicio->hour) * 60 + ($horaFin->minute - $horaInicio->minute);
+                                @endphp
+                                <div class="week-grid__event {{ $coloresSalones[$reserva->salon] ?? 'bg-light' }}"
+                                     style="top: {{ $top }}px; height: {{ $height }}px;" data-reserva-id="{{ $reserva->id }}">
+                                    <div class="week-grid__event-content">
+                                        <strong>{{ $horaInicio->format('H:i') }} - {{ $horaFin->format('H:i') }}</strong><br>
+                                        {{ $reserva->actividad }}<br>
+                                        <small>{{ $reserva->salon }}</small>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+        @endif
+
+        <style>
+            /* Estilos del calendario */
+            .calendar-month {
+                display: grid;
+                grid-template-columns: repeat(7, 1fr);
+                gap: 5px;
+                margin-bottom: 20px;
+            }
+
+            .calendar__header {
+                text-align: center;
+                font-weight: bold;
+                padding: 10px;
+                background-color: #f8f9fa;
+            }
+
+            .calendar__day {
+                min-height: 120px;
+                padding: 5px;
+                border: 1px solid #dee2e6;
+                background-color: white;
+            }
+
+            .calendar__day--disabled {
+                background-color: #f8f9fa;
+            }
+
+            .calendar__date {
+                display: block;
+                text-align: right;
+                margin-bottom: 5px;
+                text-decoration: none;
+                color: #212529;
+            }
+
+            .calendar__task {
+                padding: 2px 5px;
+                margin-bottom: 2px;
+                border-radius: 3px;
+                font-size: 0.8em;
+                color: white;
+                cursor: pointer;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            /* Estilos para vista semanal */
+            .calendar-week {
+                margin-top: 20px;
+                overflow-x: auto;
+            }
+
+            .week-grid {
+                display: grid;
+                grid-template-columns: 60px repeat(7, 1fr);
+                min-width: 800px;
+                background: white;
+                border: 1px solid #dee2e6;
+            }
+
+            .week-grid__hours {
+                border-right: 1px solid #dee2e6;
+            }
+
+            .week-grid__hour {
+                height: 60px;
+                padding: 5px;
+                border-bottom: 1px solid #dee2e6;
+                font-size: 0.8em;
+                color: #666;
+            }
+
+            .week-grid__day {
+                border-right: 1px solid #dee2e6;
+                min-width: 150px;
+            }
+
+            .week-grid__day-header {
+                text-align: center;
+                padding: 10px;
+                background-color: #f8f9fa;
+                border-bottom: 1px solid #dee2e6;
+                font-weight: bold;
+            }
+
+            .week-grid__day-content {
+                position: relative;
+                height: 1020px; /* 17 horas * 60px */
+            }
+
+            .week-grid__event {
+                position: absolute;
+                left: 0;
+                right: 0;
+                margin: 0 2px;
+                padding: 5px;
+                border-radius: 3px;
+                font-size: 0.8em;
+                color: white;
+                overflow: hidden;
+                cursor: pointer;
+            }
+
+            .week-grid__event-content {
+                font-size: 0.9em;
+                line-height: 1.2;
+            }
+        </style>
     </div>
 
-    <style>
-        .calendar {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 10px;
-        }
+    <!-- Modal para detalles de reserva -->
+    <div class="modal fade" id="detalleReservaModal" tabindex="-1" aria-labelledby="detalleReservaModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="detalleReservaModalLabel">Detalles de la Reserva</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <div class="d-flex align-items-center">
+                                <span id="modalColorSalon" class="d-inline-block me-2" style="width: 20px; height: 20px; border-radius: 4px;"></span>
+                                <h6 class="mb-0" id="modalSalon"></h6>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Fecha:</strong> <span id="modalFecha"></span></p>
+                            <p><strong>Horario:</strong> <span id="modalHorario"></span></p>
+                            <p><strong>Actividad:</strong> <span id="modalActividad"></span></p>
+                            <p><strong>Analista:</strong> <span id="modalAnalista"></span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Depto.:</strong> <span id="modalDepto"></span></p>
+                            <p><strong>Participantes:</strong> <span id="modalParticipantes"></span></p>
+                            <p><strong>Facilitador:</strong> <span id="modalFacilitador"></span></p>
+                            <p><strong>Estatus:</strong> <span id="modalEstatus"></span></p>
+                        </div>
+                        <div class="col-12">
+                            <p><strong>Insumos:</strong> <span id="modalInsumos"></span></p>
+                            <p><strong>Requisitos Técnicos:</strong> <span id="modalRequisitos"></span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        .calendar__day {
-            border: 1px solid #ddd;
-            padding: 10px;
-            min-height: 100px;
-        }
-
-        .calendar__date {
-            font-weight: bold;
-            display: block;
-            text-align: center;
-            margin-bottom: 5px;
-        }
-
-        .calendar__task {
-            background-color: #f8f9fa;
-            color: black;
-            padding: 5px;
-            margin-top: 5px;
-            border-radius: 5px;
-        }
-    </style>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-gtEjrD/SeCtmISkJkNUaaKMoLD0//ElJ19smozuHV6z3Iehds+3Ulb9Bn9Plx0x4" crossorigin="anonymous">
     </script>
-</body>
 
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Convertir las reservas a un objeto JavaScript
+        const reservas = @json($reservaCals);
+        const coloresSalones = @json($coloresSalones);
+        const modal = new bootstrap.Modal(document.getElementById('detalleReservaModal'));
+
+        // Función para mostrar los detalles en el modal
+        function mostrarDetallesReserva(reservaId) {
+            const reserva = reservas.find(r => r.id === reservaId);
+            if (!reserva) return;
+
+            // Formatear la fecha
+            const fecha = new Date(reserva.fecha).toLocaleDateString('es-ES', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+
+            // Actualizar el contenido del modal
+            document.getElementById('modalSalon').textContent = reserva.salon;
+            document.getElementById('modalColorSalon').className = coloresSalones[reserva.salon] || 'bg-light';
+            document.getElementById('modalFecha').textContent = fecha;
+            document.getElementById('modalHorario').textContent = `${reserva.hora_inicio} - ${reserva.hora_fin}`;
+            document.getElementById('modalActividad').textContent = reserva.actividad;
+            document.getElementById('modalAnalista').textContent = reserva.analista;
+            document.getElementById('modalDepto').textContent = reserva.depto_responsable;
+            document.getElementById('modalParticipantes').textContent = reserva.cant_participantes;
+            document.getElementById('modalFacilitador').textContent = reserva.facilitador_moderador;
+            document.getElementById('modalEstatus').textContent = reserva.estatus;
+            document.getElementById('modalInsumos').textContent = reserva.insumos || 'No especificado';
+            document.getElementById('modalRequisitos').textContent = reserva.requisitos_tecnicos || 'No especificado';
+
+            modal.show();
+        }
+
+        // Agregar click listeners a todas las reservas
+        document.querySelectorAll('.calendar__task, .week-grid__event').forEach(elemento => {
+            elemento.addEventListener('click', function(e) {
+                e.preventDefault();
+                const reservaId = this.getAttribute('data-reserva-id');
+                mostrarDetallesReserva(parseInt(reservaId));
+            });
+        });
+    });
+    </script>
+</body>
 </html>
