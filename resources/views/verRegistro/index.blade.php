@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css" rel="stylesheet">
-    <link href="https://cdn.datatables.net/buttons/2.2.2/css/buttons.bootstrap5.min.css" rel="stylesheet">
     <title>Ver Informacion</title>
 </head>
 
@@ -20,14 +19,6 @@
                     <div>
                         <i class="fas fa-table me-1"></i>
                         Registros de Reservas
-                    </div>
-                    <div class="btn-group">
-                        <button type="button" class="btn btn-success btn-sm" id="exportExcel">
-                            <i class="fas fa-file-excel"></i> Excel
-                        </button>
-                        <button type="button" class="btn btn-danger btn-sm" id="exportPDF">
-                            <i class="fas fa-file-pdf"></i> PDF
-                        </button>
                     </div>
                 </div>
             </div>
@@ -232,71 +223,38 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.2.2/js/dataTables.buttons.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.bootstrap5.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.html5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.print.min.js"></script>
     <script src="https://kit.fontawesome.com/your-code.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
 
     <script>
         $(document).ready(function() {
-            // Inicializar DataTable
             var table = $('#registrosTable').DataTable({
                 language: {
                     url: '//cdn.datatables.net/plug-ins/1.10.24/i18n/Spanish.json'
                 },
                 pageLength: 10,
-                dom: 'Bfrtip',
-                buttons: [
-                    {
-                        extend: 'excel',
-                        className: 'btn btn-success btn-sm',
-                        text: '<i class="fas fa-file-excel"></i> Excel'
-                    },
-                    {
-                        extend: 'pdf',
-                        className: 'btn btn-danger btn-sm',
-                        text: '<i class="fas fa-file-pdf"></i> PDF'
-                    }
-                ],
                 order: [[0, 'desc']]
             });
 
             // Manejador para el modal de detalles
             $('.ver-detalles').click(function() {
-                var reserva = JSON.parse($(this).data('reserva'));
-                $('#modalSalon').text(reserva.salon);
-                $('#modalActividad').text(reserva.actividad);
-                $('#modalFecha').text(reserva.fecha);
-                $('#modalHorario').text(reserva.hora_inicio + ' - ' + reserva.hora_fin);
-                $('#modalAnalista').text(reserva.analista);
-                $('#modalDepto').text(reserva.depto_responsable);
-                $('#modalParticipantes').text(reserva.cant_participantes);
-                $('#modalInsumos').text(reserva.insumos || 'No especificado');
-                $('#modalRequisitos').text(reserva.requisitos_tecnicos || 'No especificado');
-                $('#modalAsistencia').text(reserva.asistencia_tecnica);
-                
-                // Formatear recesos
-                const recesoAM = reserva.receso_am ? 
-                    moment(reserva.receso_am, 'HH:mm:ss').format('h:mm A') + ' (15 min)' : 
-                    'No programado';
-                const recesoPM = reserva.receso_pm ? 
-                    moment(reserva.receso_pm, 'HH:mm:ss').format('h:mm A') + ' (15 min)' : 
-                    'No programado';
-                $('#modalRecesoAM').text(recesoAM);
-                $('#modalRecesoPM').text(recesoPM);
+                var reserva = $(this).data('reserva');
+                $('#modalTitulo').text('Detalles de la Reserva #' + reserva.id);
+                var detallesHtml = `
+                    <p><strong>Fecha:</strong> ${reserva.fecha}</p>
+                    <p><strong>Salón:</strong> ${reserva.salon}</p>
+                    <p><strong>Actividad:</strong> ${reserva.actividad}</p>
+                    <p><strong>Analista:</strong> ${reserva.analista}</p>
+                    <p><strong>Departamento:</strong> ${reserva.depto_responsable}</p>
+                `;
+                $('#modalDetalles').html(detallesHtml);
             });
 
             // Manejador para eliminar registro
             $('.eliminar-registro').click(function() {
-                if (confirm('¿Está seguro de que desea eliminar este registro?')) {
-                    var id = $(this).data('id');
-                    // Aquí iría la lógica para eliminar el registro
-                    // Por ejemplo, una llamada AJAX al servidor
+                var id = $(this).data('id');
+                if(confirm('¿Está seguro de eliminar este registro?')) {
+                    // Aquí iría la lógica para eliminar
                 }
             });
 
