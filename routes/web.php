@@ -8,8 +8,9 @@ use App\Http\Controllers\ReservaCalController;
 
 Route::get("/", [MainController::class, "index"])->name("home");
 Route::get('/calendario', [ReservaCalController::class, 'index'])->name('calendario');
-Route::get('/reservaCal/create', [ReservaCalController::class, 'create'])->name('reservaCal.create');
-Route::post('/reservaCal/store', [ReservaCalController::class, 'store'])->name('reservaCal.store');
+
+Route::resource('reservaCal', ReservaCalController::class);
+
 
 Route::resource('/registro', RegistroReservaController::class);
 

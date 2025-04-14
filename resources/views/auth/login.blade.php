@@ -6,63 +6,8 @@
     <title>Iniciar Sesión - Sistema de Reservas</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
-    <style>
-        body {
-            background: #f8f9fa;
-        }
-        .login-container {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .login-card {
-            max-width: 400px;
-            width: 100%;
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-            background: white;
-        }
-        .login-header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-        .login-header img {
-            width: 80px;
-            margin-bottom: 1rem;
-        }
-        .form-floating {
-            margin-bottom: 1rem;
-        }
-        .btn-login {
-            width: 100%;
-            padding: 0.8rem;
-            font-size: 1.1rem;
-        }
-        .divider {
-            text-align: center;
-            margin: 1.5rem 0;
-            position: relative;
-        }
-        .divider::before {
-            content: "";
-            position: absolute;
-            top: 50%;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: #dee2e6;
-            z-index: 1;
-        }
-        .divider span {
-            background: white;
-            padding: 0 1rem;
-            color: #6c757d;
-            position: relative;
-            z-index: 2;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ asset('css/login.css')}}">
+
 </head>
 <body>
 @include('plantilla.nabvar')

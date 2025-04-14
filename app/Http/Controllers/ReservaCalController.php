@@ -16,12 +16,12 @@ class ReservaCalController extends Controller
         $vista = request('vista', 'mensual'); // Por defecto vista mensual
         $mesSeleccionado = request('mes', now()->format('m'));
         $anioActual = now()->format('Y');
-        
+
         if ($vista === 'semanal') {
             $semanaActual = request('semana', now()->weekOfYear);
             $fechaInicio = Carbon::now()->setISODate($anioActual, $semanaActual)->startOfWeek();
             $fechaFin = $fechaInicio->copy()->endOfWeek();
-            
+
             $reservaCals = $reservaCals->filter(function($reserva) use ($fechaInicio, $fechaFin) {
                 return Carbon::parse($reserva->fecha_inicio)->between($fechaInicio, $fechaFin) ||
                        Carbon::parse($reserva->fecha_final)->between($fechaInicio, $fechaFin);
@@ -135,7 +135,7 @@ class ReservaCalController extends Controller
      */
     public function edit(ReservaCal $reservaCal)
     {
-        //
+        return view('reservaCal.edit', compact('reservaCal'));
     }
 
     /**
@@ -143,7 +143,38 @@ class ReservaCalController extends Controller
      */
     public function update(Request $request, ReservaCal $reservaCal)
     {
-        //
+        $request->validate([
+            'fecha_inicio' => 'required|date',
+            'fecha_final' => 'required|date|after_or_equal:fecha_inicio',
+            'hora_inicio' => 'required|date_format:H:i',
+            'hora_fin' => 'required|date_format:H:i|after:hora_inicio',
+            'actividad' => 'required|string|max:255',
+            'analista' => 'required|string|max:255',
+            'salon' => 'required|string|in:"Auditorio Jorge L. Quijada",
+                                "Trabajo en Equipo",
+                                "Comunicación Asertiva",
+                                "Servicio al Cliente",
+                                "Integridad",
+                                "Creatividad Innovadora"',
+            'depto_responsable' => 'required',
+            'numero_evento' => 'required|numeric|digits:4',
+            'scafid' => 'nullable|string',
+            'mes' => 'required|string',
+            'tipo_actividad' => 'required',
+            'receso_am' => 'nullable',
+            'receso_pm' => 'nullable',
+            'publico_meta' => 'required|string',
+            'cant_participantes' => 'required|numeric',
+            'facilitador_moderador' => 'required|string',
+            'estatus' => 'required',
+            'insumos' => 'nullable|string',
+            'requisitos_tecnicos' => 'nullable|string',
+            'asistencia_tecnica' => 'required'
+        ]);
+
+        $reservaCal->update($request->all());
+
+        return redirect()->route('calendario')->with('success', __('Reserva actualizada exitosamente.'));
     }
 
     /**

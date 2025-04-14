@@ -42,6 +42,7 @@
                                 <th>Tipo</th>
                                 <th>Receso AM</th>
                                 <th>Receso PM</th>
+                                <th>Publico Meta</th>
                                 <th>Participantes</th>
                                 <th>Estatus</th>
                                 <th>Requisitos</th>
@@ -84,6 +85,7 @@
                                             N/A
                                         @endif
                                     </td>
+                                    <td>{{ $reserva->publico_meta }}</td>
                                     <td>{{ $reserva->cant_participantes }}</td>
                                     <td>
                                         @php
@@ -92,14 +94,14 @@
                                                 'Realizado' => 'bg-success',
                                                 'Cancelado' => 'bg-danger'
                                             ][$reserva->estatus] ?? 'bg-secondary';
-                                            
+
                                             $estatusIcon = [
                                                 'Programado' => 'calendar-check',
                                                 'Realizado' => 'check-circle',
                                                 'Cancelado' => 'times-circle'
                                             ][$reserva->estatus] ?? 'question-circle';
                                         @endphp
-                                        <span class="badge {{ $estatusClass }} d-flex align-items-center" 
+                                        <span class="badge {{ $estatusClass }} d-flex align-items-center"
                                               style="font-size: 0.9em; padding: 8px;">
                                             <i class="fas fa-{{ $estatusIcon }} me-2"></i>
                                             {{ $reserva->estatus }}
@@ -108,18 +110,9 @@
                                     <td>{{ $reserva->requisitos_tecnicos }}</td>
                                     <td>{{ $reserva->insumos }}</td>
                                     <td>
-                                        <div class="btn-group">
-                                            <button type="button" class="btn btn-sm btn-info" 
-                                                    onclick="mostrarDetalles({{ $reserva->id }})">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                            @if($reserva->estatus != 'Realizado')
-                                                <button type="button" class="btn btn-sm btn-success" 
-                                                        onclick="cambiarEstatus({{ $reserva->id }}, '{{ $reserva->estatus }}')">
-                                                    <i class="fas fa-check"></i>
-                                                </button>
-                                            @endif
-                                        </div>
+                                        <a href="{{ route('reservaCal.edit', $reserva->id) }}" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-edit"></i> Editar
+                                        </a>
                                     </td>
                                 </tr>
                             @endforeach
@@ -205,7 +198,7 @@
                                 <i class="fas fa-comment-alt me-1"></i>
                                 Observaciones
                             </label>
-                            <textarea class="form-control" id="observaciones" name="observaciones" rows="3" 
+                            <textarea class="form-control" id="observaciones" name="observaciones" rows="3"
                                     placeholder="Ingrese cualquier observación relevante sobre el cambio de estatus..."></textarea>
                         </div>
                     </form>
